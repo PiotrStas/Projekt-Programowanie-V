@@ -1,0 +1,2 @@
+# Lab 2: konwersje CSV <-> JSON korzystają wyłącznie z biblioteki standardowej.
+pytest>=7.0

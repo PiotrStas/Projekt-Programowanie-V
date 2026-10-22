@@ -1,0 +1,5 @@
+[
+  {"id": 1, "nazwa": "Długopis żelowy", "cena": 4.99, "dostępny": true},
+  {"id": 2, "nazwa": "Zeszyt A5, 60 kartek", "cena": 6.5, "dostępny": false, "uwagi": null},
+  {"id": 3, "nazwa": "Gumka „Pelikan”", "cena": 2, "dostępny": true, "uwagi": "nowość"}
+]

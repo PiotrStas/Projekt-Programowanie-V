@@ -1,7 +1,7 @@
 # Uniwersalny konwerter plików
 
 Projekt 1 – Programowanie V, Politechnika Opolska.
-Autor: Piotr ……… (nr albumu ………)
+Autor: Piotr Staś (nr albumu 105534)
 
 Aplikacja konwertuje pliki między formatami. Logika konwersji jest oddzielona od interfejsu:
 konwertery rejestrują się w rejestrze (`konwerter/core.py`), a interfejs pobiera z niego listę

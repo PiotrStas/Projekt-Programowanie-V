@@ -1,0 +1,8 @@
+Plik tekstowy do testu TXT -> DOCX
+
+Pierwszy akapit z polskimi znakami: zażółć gęślą jaźń.
+Drugi akapit zaraz pod pierwszym.
+
+Akapit po pustej linii – pusta linia powinna zostać zachowana.
+Linia z tabulatorami:	kolumna 1	kolumna 2	kolumna 3
+Ostatnia linia pliku.

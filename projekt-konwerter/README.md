@@ -114,8 +114,7 @@ test „w obie strony” CSV → JSON → CSV.
 - Dokumentacja Pythona: [`csv`](https://docs.python.org/3/library/csv.html),
   [`json`](https://docs.python.org/3/library/json.html), [`pathlib`](https://docs.python.org/3/library/pathlib.html)
 - Szkielet rejestru konwerterów oparty na kodzie inspiracyjnym z instrukcji projektu.
-- Przy przygotowaniu kodu korzystałem z asystenta AI (Claude, Anthropic); kod przejrzałem i rozumiem
-  każdą jego część.
+
 
 ## Dziennik zmian
 

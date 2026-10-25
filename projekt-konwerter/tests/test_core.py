@@ -22,6 +22,9 @@ def test_rejestr_zawiera_grupe_a():
 def test_available_targets():
     assert available_targets(Path("x.CSV")) == ["json"]
     assert available_targets(Path("x.json")) == ["csv"]
+    assert available_targets(Path("x.docx")) == ["odt", "pdf", "txt"]
+    assert available_targets(Path("x.odt")) == ["docx", "pdf"]
+    assert available_targets(Path("x.txt")) == ["docx"]
     assert available_targets(Path("x.exe")) == []
     assert available_targets(Path("bez_rozszerzenia")) == []
 

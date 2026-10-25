@@ -29,23 +29,11 @@ from pathlib import Path
 
 from ..core import converter
 from ..errors import InvalidInputError
+from .common import read_text_utf8 as _read_text
 
-INPUT_ENCODING = "utf-8-sig"   # czyta UTF-8 z BOM i bez BOM
 OUTPUT_CSV_ENCODING = "utf-8-sig"
 OUTPUT_CSV_DELIMITER = ","
 CANDIDATE_DELIMITERS = [",", ";", "\t"]
-
-
-def _read_text(path: Path) -> str:
-    """Wczytuje plik jako UTF-8; newline='' zachowuje znaki nowej linii w polach CSV."""
-    try:
-        with path.open(encoding=INPUT_ENCODING, newline="") as f:
-            return f.read()
-    except UnicodeDecodeError as exc:
-        raise InvalidInputError(
-            f"Plik {path.name} nie jest zapisany w UTF-8 (błędny bajt na pozycji {exc.start}).",
-            "Zapisz plik ponownie z kodowaniem UTF-8 (np. Notatnik: Zapisz jako -> Kodowanie UTF-8).",
-        ) from exc
 
 
 def detect_delimiter(header_line: str) -> str:

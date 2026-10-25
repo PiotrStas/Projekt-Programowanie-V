@@ -7,3 +7,11 @@
 - Konwertery CSV → JSON i JSON → CSV z opisaną semantyką.
 - Uruchamianie z wiersza poleceń (`python -m konwerter`).
 - Dane testowe i testy pytest.
+
+## Lab 3
+- Grupa B: TXT → DOCX i DOCX → TXT (python-docx); akapity i tabele w kolejności z dokumentu.
+- Grupa C: DOCX → PDF, ODT → PDF, DOCX → ODT, ODT → DOCX przez LibreOffice w trybie headless.
+- Wykrywanie LibreOffice (zmienna KONWERTER_SOFFICE, PATH, typowe ścieżki Windows/macOS/Linux).
+- Wywołanie bez shell=True, limit czasu, kontrola kodu zakończenia i istnienia pliku wynikowego.
+- Wstępna kontrola poprawności plików DOCX/ODT; wspólny odczyt UTF-8 w converters/common.py.
+- Nowe dane testowe i testy (56 testów).

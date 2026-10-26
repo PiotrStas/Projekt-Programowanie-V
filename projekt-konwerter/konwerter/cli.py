@@ -1,6 +1,7 @@
-"""Uruchamianie konwersji z wiersza poleceń (Lab 2 – bez GUI).
+"""Uruchamianie z wiersza poleceń. Bez argumentów otwiera okno (GUI).
 
 Przykłady:
+    python -m konwerter                       # okno programu
     python -m konwerter --lista
     python -m konwerter dane_testowe/studenci.csv --na json --do wyniki
     python -m konwerter dane_testowe/produkty.json --na csv --do wyniki --nadpisz
@@ -49,8 +50,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.plik is None:
-        build_parser().print_help()
-        return 2
+        # bez argumentów: otwieramy okno (import dopiero tutaj – CLI działa nawet bez Tkintera)
+        from .gui import run
+
+        run()
+        return 0
 
     if not args.format:
         targets = available_targets(args.plik)

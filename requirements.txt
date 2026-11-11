@@ -1,0 +1,3 @@
+pandas>=2.2          # wczytywanie, profil i czyszczenie danych
+pytest>=7.0          # testy
+# Lab 7: matplotlib, seaborn

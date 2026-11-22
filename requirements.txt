@@ -1,3 +1,4 @@
 pandas>=2.2          # wczytywanie, profil i czyszczenie danych
+matplotlib>=3.8      # wykresy (Figure – osadzanie w Tkinter i zapis PNG/PDF/SVG)
+seaborn>=0.13        # wykres punktowy, pudełkowy i macierz korelacji
 pytest>=7.0          # testy
-# Lab 7: matplotlib, seaborn

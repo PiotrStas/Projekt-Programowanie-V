@@ -29,3 +29,14 @@
 - Skrypt `python -m studio.wykresy`: 8 wykresów + korelacja w PDF/SVG + `wnioski.txt`
   z interpretacją (korelacja ≠ przyczynowość).
 - 21 nowych testów (razem 73).
+
+## Lab 8 – okno programu (Tkinter/ttk)
+- `python -m studio` otwiera okno: wczytanie CSV, zakładki Podgląd, Profil, Jakość i Czyszczenie.
+- Podgląd pierwszych 200 wierszy danych bieżących; profil kolumn (z przełącznikiem „dane surowe”).
+- Zakładka Jakość: reguła zakresu dla wybranej kolumny i raport IQR – tylko wykrywanie, bez zmian danych.
+- Zakładka Czyszczenie: wybór operacji, wariantu, kolumny i parametrów; listy kolumn filtrowane
+  wg typu (np. mediana tylko dla liczb); dziennik zmian w tabeli; reset do danych surowych.
+- Stan aplikacji w obiekcie `StudioApp` (bez zmiennych globalnych); `refresh_all()` odświeża
+  wszystkie kontrolki po każdej zmianie zbioru.
+- Błędny plik lub parametr -> okienko z przyczyną i podpowiedzią; poprzednie dane zostają.
+- Logika okna bez Tkintera w `studio/gui_logic.py`; 25 nowych testów (logika + prawdziwe okno), razem 98.

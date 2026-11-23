@@ -19,8 +19,7 @@ def dane() -> Path:
 
 @pytest.fixture
 def small_df() -> pd.DataFrame:
-    """Mały, ręcznie kontrolowany zbiór: 1 para duplikatów, braki liczbowe i tekstowe,
-    wartość ujemna (poza zakresem) i jedna oczywista wartość odstająca."""
+    
     return pd.DataFrame({
         "id":    [1, 2, 2, 3, 4, 5, 6, 7],
         "wiek":  [10.0, -5.0, -5.0, 20.0, None, 30.0, 35.0, 40.0],

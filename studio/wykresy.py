@@ -1,10 +1,11 @@
-"""Lab 7: zestaw wykresów dla danych przed i po czyszczeniu.
+"""Skrypt do Lab 7 – rysuje wykresy dla danych przed i po czyszczeniu.
 
-Uruchomienie (w folderze projektu):
+Uruchamianie:
     python -m studio.wykresy
-    python -m studio.wykresy dane_testowe/california_housing_z_problemami.csv --wyniki wyniki
+    python -m studio.wykresy <plik.csv> --wyniki <katalog>
 
-Zapisuje do <wyniki>/wykresy/ pliki PNG (i korelację także w PDF i SVG) oraz wnioski.txt.
+Wykresy zapisuje do <katalog>/wykresy w PNG (korelację dodatkowo w PDF i SVG),
+a wnioski z korelacji do pliku wnioski.txt.
 """
 
 from __future__ import annotations
@@ -22,10 +23,8 @@ from .session import DataSession
 def make_charts(session: DataSession, folder: Path) -> list[Path]:
     raw, clean = session.raw, session.current
     figures = {
-        # przed/po – widać efekt czyszczenia (AveRooms 1000 -> mediana, HouseAge -5 -> mediana)
         "01_aveRooms_przed_po.png": charts.before_after_figure(raw, clean, "AveRooms", "histogram"),
         "02_houseAge_przed_po.png": charts.before_after_figure(raw, clean, "HouseAge", "pudelkowy"),
-        # 4 wymagane typy na danych po czyszczeniu
         "03_histogram_medHouseVal.png": charts.histogram_figure(clean, "MedHouseVal"),
         "04_punktowy_medInc_medHouseVal.png": charts.scatter_figure(clean, "MedInc", "MedHouseVal", hue="Region"),
         "05_pudelkowy_medHouseVal_region.png": charts.box_figure(clean, "MedHouseVal", by="Region"),

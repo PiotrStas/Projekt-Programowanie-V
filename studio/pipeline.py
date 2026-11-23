@@ -1,18 +1,11 @@
-"""Lab 6: skrypt czyszczący zbiór California Housing i tworzący raport przed/po.
+"""Skrypt do Lab 6 – czyści zbiór California Housing i zapisuje raport przed i po.
 
-Uruchomienie (w folderze projektu):
+Uruchamianie:
     python -m studio.pipeline
-    python -m studio.pipeline dane_testowe/california_housing_z_problemami.csv --wyniki wyniki
+    python -m studio.pipeline <plik.csv> --wyniki <katalog>
 
-Wynik (w katalogu --wyniki):
-    cleaned.csv          dane po czyszczeniu
-    raport_zmian.csv     dziennik operacji (ile rekordów zmieniła każda)
-    profil_przed.csv / profil_po.csv     profil kolumn
-    jakosc_przed.csv / jakosc_po.csv     raport reguł jakości
-    raport.txt           całość w formie czytelnej dla człowieka
-
-Wszystkie kroki są deterministyczne – ponowne uruchomienie daje identyczne pliki
-(poza godziną w kolumnie „czas” dziennika).
+W katalogu z wynikami zapisuje cleaned.csv, raport zmian, profil i raport jakości
+(przed i po czyszczeniu) oraz raport.txt z podsumowaniem.
 """
 
 from __future__ import annotations
@@ -28,24 +21,16 @@ from .session import DataSession
 
 DEFAULT_INPUT = Path("dane_testowe/california_housing_z_problemami.csv")
 
-# Reguły zakresu – uzasadnienie w README:
-#  - HouseAge: wiek budynku nie może być ujemny (w danych są wartości -5),
-#  - AveRooms: średnio > 200 pokoi na mieszkanie jest fizycznie nierealne
-#    (w oryginalnym zbiorze maksimum to ok. 142; w danych są sztuczne wartości 1000).
 RANGE_RULES = [
     RangeRule("HouseAge", minimum=0, maximum=100),
     RangeRule("AveRooms", minimum=0, maximum=200),
 ]
-# Uzupełnianie braków medianą (odporna na wartości skrajne).
 MEDIAN_FILL = ["MedInc", "HouseAge", "AveRooms"]
-# Braki w kolumnie tekstowej: usunięcie wierszy (druga strategia braków).
 DROP_MISSING = ["Region"]
-# Wartości odstające IQR – tylko OZNACZAMY (mogą być prawdziwe, np. duże osiedla).
 FLAG_OUTLIERS = ["AveOccup", "Population"]
 
 
 def clean_california(session: DataSession) -> None:
-    """Domyślny pipeline czyszczenia. Kroki dla nieistniejących kolumn są pomijane."""
     columns = set(session.current.columns)
     session.drop_duplicates()
     for rule in RANGE_RULES:

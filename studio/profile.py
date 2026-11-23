@@ -1,6 +1,5 @@
-"""Profil danych: rozmiar, typy, statystyki opisowe, braki, duplikaty i unikalność.
-
-Funkcje tylko CZYTAJĄ DataFrame – niczego nie zmieniają.
+"""Profil danych – liczba wierszy i kolumn, typy, statystyki, braki, duplikaty
+i liczba unikalnych wartości. Funkcje tylko odczytują dane, nic w nich nie zmieniają.
 """
 
 from __future__ import annotations
@@ -17,7 +16,6 @@ def categorical_columns(df: pd.DataFrame) -> list[str]:
 
 
 def summary(df: pd.DataFrame) -> dict[str, int | float]:
-    """Najważniejsze liczby o całym zbiorze."""
     cells = df.size
     missing = int(df.isna().sum().sum())
     return {
@@ -33,7 +31,6 @@ def summary(df: pd.DataFrame) -> dict[str, int | float]:
 
 
 def column_profile(df: pd.DataFrame) -> pd.DataFrame:
-    """Jedna linia na kolumnę: typ, braki, unikalność i statystyki (dla liczb)."""
     profile = pd.DataFrame({
         "typ": df.dtypes.astype(str),
         "braki": df.isna().sum(),
@@ -56,12 +53,10 @@ def column_profile(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def is_constant(series: pd.Series) -> bool:
-    """Kolumna bez zmienności (0 lub 1 unikalna wartość) – nie nadaje się do wykresu rozkładu."""
     return series.nunique(dropna=True) <= 1
 
 
 def summary_text(df: pd.DataFrame, title: str = "Profil danych") -> str:
-    """Czytelny opis do konsoli / pliku tekstowego."""
     s = summary(df)
     lines = [
         f"=== {title} ===",

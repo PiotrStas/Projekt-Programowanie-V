@@ -1,8 +1,6 @@
-"""Sesja pracy z danymi: dane surowe, dane bieżące i dziennik operacji (ślad zmian).
-
-- `raw` nigdy się nie zmienia – reset przywraca z niego `current` bez ponownego wczytywania pliku,
-- każda operacja czyszczenia działa na kopii `current` i dopisuje wpis do `log`,
-- sesja nie wie nic o GUI – okno (Lab 8) będzie tylko wywoływać jej metody.
+"""Sesja pracy z danymi. Trzyma dane surowe (raw), dane po zmianach (current)
+i dziennik wykonanych operacji. Dane surowe się nie zmieniają, więc reset
+nie wymaga ponownego wczytywania pliku.
 """
 
 from __future__ import annotations
@@ -22,8 +20,6 @@ from .rules import RangeRule, quality_report
 
 @dataclass(frozen=True)
 class Operation:
-    """Jeden wpis dziennika zmian."""
-
     nazwa: str
     parametry: str
     czas: str
@@ -51,15 +47,12 @@ class DataSession:
         session._record("wczytanie", f"plik={Path(path).name}, separator={sep!r}", 0, len(frame), 0)
         return session
 
-    # ------------------------------------------------------------------ dziennik
-
     def _record(self, name: str, params: str, before: int, after: int, changed: int) -> Operation:
         op = Operation(name, params, datetime.now().isoformat(timespec="seconds"), before, after, changed)
         self.log.append(op)
         return op
 
     def _apply(self, name: str, params: str, func: Callable[[pd.DataFrame], tuple[pd.DataFrame, int]]) -> Operation:
-        """Wykonuje operację na kopii danych; dopiero po sukcesie podmienia `current` i zapisuje wpis."""
         before = len(self.current)
         new_frame, changed = func(self.current)
         self.current = new_frame
@@ -68,8 +61,6 @@ class DataSession:
     def log_frame(self) -> pd.DataFrame:
         return pd.DataFrame([asdict(op) for op in self.log],
                             columns=["nazwa", "parametry", "czas", "wiersze_przed", "wiersze_po", "zmienione_rekordy"])
-
-    # ------------------------------------------------------------------ operacje
 
     def drop_duplicates(self, subset: list[str] | None = None) -> Operation:
         params = "pełne duplikaty" if not subset else f"klucz={subset}"
@@ -92,12 +83,9 @@ class DataSession:
         return self._apply("wartosci_odstajace", params, lambda df: cleaning.handle_outliers(df, column, action, factor))
 
     def reset(self) -> Operation:
-        """Powrót do danych surowych bez ponownego wczytywania pliku. Dziennik zostaje (ślad, że był reset)."""
         before = len(self.current)
         self.current = self.raw.copy(deep=True)
         return self._record("reset", "przywrócono dane surowe", before, len(self.current), 0)
-
-    # ------------------------------------------------------------------ raporty i eksport
 
     def quality_report(self, range_rules: list[RangeRule] = (), iqr_columns: list[str] = (),
                        factor: float = 1.5, raw: bool = False) -> pd.DataFrame:

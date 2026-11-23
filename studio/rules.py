@@ -1,7 +1,6 @@
-"""Reguły jakości: zakres poprawnych wartości i wykrywanie wartości odstających (IQR).
-
-Reguły tylko WYKRYWAJĄ problemy (zwracają maskę / raport). O tym, co zrobić z wykrytymi
-rekordami, decyduje osobna operacja czyszczenia wybrana przez użytkownika.
+"""Reguły jakości – sprawdzanie zakresu wartości w kolumnie i szukanie wartości
+odstających metodą IQR. Reguły tylko wskazują problematyczne wiersze, a to, co z nimi
+zrobić, wybiera się osobno w czyszczeniu.
 """
 
 from __future__ import annotations
@@ -31,8 +30,6 @@ def require_numeric(df: pd.DataFrame, column: str) -> pd.Series:
 
 @dataclass(frozen=True)
 class RangeRule:
-    """Wartości kolumny powinny mieścić się w [minimum, maximum]. None = brak ograniczenia."""
-
     column: str
     minimum: float | None = None
     maximum: float | None = None
@@ -50,7 +47,6 @@ class RangeRule:
             )
 
     def violations(self, df: pd.DataFrame) -> pd.Series:
-        """Maska wierszy z wartością poza zakresem. Braki NIE są naruszeniem (to osobny problem)."""
         self.validate(df)
         values = df[self.column]
         mask = pd.Series(False, index=df.index)
@@ -67,7 +63,6 @@ class RangeRule:
 
 
 def iqr_bounds(df: pd.DataFrame, column: str, factor: float = 1.5) -> tuple[float, float] | None:
-    """Granice Q1 − k·IQR i Q3 + k·IQR. None, gdy IQR = 0 lub brak danych (metoda nic nie wykryje)."""
     if factor <= 0:
         raise ParameterError(f"Współczynnik IQR musi być dodatni (podano {factor}).", "Typowa wartość to 1.5 lub 3.")
     values = require_numeric(df, column).dropna()
@@ -81,7 +76,6 @@ def iqr_bounds(df: pd.DataFrame, column: str, factor: float = 1.5) -> tuple[floa
 
 
 def iqr_mask(df: pd.DataFrame, column: str, factor: float = 1.5) -> pd.Series:
-    """Maska wartości odstających wg reguły IQR (braki nie są odstające)."""
     bounds = iqr_bounds(df, column, factor)
     if bounds is None:
         return pd.Series(False, index=df.index)
@@ -96,7 +90,6 @@ def quality_report(
     iqr_columns: list[str] = (),
     factor: float = 1.5,
 ) -> pd.DataFrame:
-    """Raport reguł jakości: ile rekordów narusza każdą regułę. Danych nie zmienia."""
     rows = []
     total = len(df)
     for rule in range_rules:

@@ -1,11 +1,8 @@
-"""Wczytywanie plików CSV z kontrolą błędów.
+"""Wczytywanie plików CSV.
 
-Zasady:
-- kodowanie UTF-8 (z BOM lub bez); inne kodowanie -> kontrolowany błąd z instrukcją,
-- separator wykrywany z pierwszej linii: przecinek, średnik albo tabulator,
-- wiersz z inną liczbą pól niż nagłówek -> błąd z numerem wiersza (nie pomijamy go po cichu,
-  bo użytkownik straciłby dane bez informacji),
-- plik pusty albo bez rekordów -> błąd.
+Separator (przecinek, średnik albo tabulator) jest rozpoznawany po pierwszej linii.
+Plik musi być w UTF-8. Zły wiersz, pusty plik albo powtórzone nazwy kolumn
+kończą się błędem z informacją, co poprawić.
 """
 
 from __future__ import annotations
@@ -23,7 +20,6 @@ CANDIDATE_SEPARATORS = [",", ";", "\t"]
 
 
 def detect_separator(first_line: str) -> str:
-    """Najczęstszy z kandydatów w nagłówku; brak separatora -> przecinek (jedna kolumna)."""
     counts = {sep: first_line.count(sep) for sep in CANDIDATE_SEPARATORS}
     best = max(counts, key=counts.get)
     return best if counts[best] > 0 else ","
@@ -45,7 +41,6 @@ def _encoding_error(path: Path, exc: UnicodeDecodeError) -> DataLoadError:
 
 
 def load_csv(path: str | Path) -> tuple[pd.DataFrame, str]:
-    """Wczytuje CSV. Zwraca (DataFrame, użyty separator)."""
     path = Path(path)
     if not path.is_file():
         raise DataLoadError(f"Nie znaleziono pliku: {path}", "Sprawdź ścieżkę i wybierz plik ponownie.")
@@ -77,7 +72,6 @@ def load_csv(path: str | Path) -> tuple[pd.DataFrame, str]:
 
 
 def _describe_parser_error(path: Path, exc: Exception) -> str:
-    """pandas: 'Expected 3 fields in line 3, saw 4' -> czytelny komunikat po polsku."""
     match = re.search(r"Expected (\d+) fields in line (\d+), saw (\d+)", str(exc))
     if match:
         expected, line, saw = match.groups()

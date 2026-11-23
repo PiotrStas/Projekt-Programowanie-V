@@ -1,12 +1,6 @@
-"""Wykresy (Lab 7): histogram, punktowy, pudełkowy, słupkowy i macierz korelacji.
-
-Zasady:
-- każda funkcja ZWRACA obiekt Figure – ten sam wykres można osadzić w oknie Tkinter
-  (FigureCanvasTkAgg) albo zapisać do PNG/PDF/SVG,
-- używamy matplotlib.figure.Figure, a NIE pyplot: pyplot trzyma „bieżący wykres” w zmiennej
-  globalnej, a Figure jest zwykłym obiektem – bez ukrytego stanu i bezpieczny w GUI,
-- przed rysowaniem sprawdzamy typ kolumny: zły typ albo kolumna stała -> ColumnError
-  z komunikatem, zamiast pustego lub mylącego wykresu.
+"""Wykresy – histogram, punktowy, pudełkowy, słupkowy i macierz korelacji.
+Każda funkcja zwraca obiekt Figure, więc ten sam wykres można pokazać w oknie
+programu albo zapisać do pliku PNG, PDF lub SVG.
 """
 
 from __future__ import annotations
@@ -21,7 +15,6 @@ from .errors import ColumnError, ExportError, ParameterError
 from .profile import is_constant
 from .rules import require_column
 
-# Czytelne opisy osi dla zbioru California Housing; inne kolumny – sama nazwa.
 COLUMN_LABELS = {
     "MedInc": "Mediana dochodu [10 tys. USD]",
     "HouseAge": "Mediana wieku budynków [lata]",
@@ -43,10 +36,7 @@ def label(column: str) -> str:
     return COLUMN_LABELS.get(column, column)
 
 
-# ---------------------------------------------------------------- walidacja kolumn
-
 def numeric_values(df: pd.DataFrame, column: str) -> pd.Series:
-    """Wartości kolumny liczbowej bez braków. Błąd dla tekstu, pustej i stałej kolumny."""
     require_column(df, column)
     series = df[column]
     if not pd.api.types.is_numeric_dtype(series) or pd.api.types.is_bool_dtype(series):
@@ -66,7 +56,6 @@ def numeric_values(df: pd.DataFrame, column: str) -> pd.Series:
 
 
 def categorical_values(df: pd.DataFrame, column: str) -> pd.Series:
-    """Kolumna kategoryczna: tekst albo liczba o niewielu wartościach (≤ MAX_CATEGORIES)."""
     require_column(df, column)
     series = df[column]
     unique = series.nunique(dropna=True)
@@ -85,10 +74,7 @@ def _new_figure() -> tuple[Figure, object]:
     return fig, fig.add_subplot()
 
 
-# ---------------------------------------------------------------- 4 typy wykresów
-
 def histogram_figure(df: pd.DataFrame, column: str, bins: int = 50, title: str | None = None) -> Figure:
-    """Rozkład jednej zmiennej liczbowej."""
     values = numeric_values(df, column)
     fig, ax = _new_figure()
     ax.hist(values, bins=bins, color="#4C72B0", edgecolor="white", linewidth=0.3)
@@ -98,7 +84,6 @@ def histogram_figure(df: pd.DataFrame, column: str, bins: int = 50, title: str |
 
 
 def scatter_figure(df: pd.DataFrame, x: str, y: str, hue: str | None = None, title: str | None = None) -> Figure:
-    """Zależność między dwiema zmiennymi liczbowymi; opcjonalnie kolor wg kategorii."""
     if x == y:
         raise ParameterError("Oś X i oś Y to ta sama kolumna.", "Wybierz dwie różne kolumny.")
     numeric_values(df, x)
@@ -108,7 +93,6 @@ def scatter_figure(df: pd.DataFrame, x: str, y: str, hue: str | None = None, tit
         categorical_values(df, hue)
     data = df[columns].dropna()
     fig, ax = _new_figure()
-    # przy ~20 tys. punktów małe, półprzezroczyste kropki pokazują zagęszczenie
     sns.scatterplot(data=data, x=x, y=y, hue=hue, s=8, alpha=0.35, linewidth=0, ax=ax)
     r = data[x].corr(data[y])
     ax.set(title=title or f"{y} względem {x} (korelacja r = {r:.2f})", xlabel=label(x), ylabel=label(y))
@@ -117,7 +101,6 @@ def scatter_figure(df: pd.DataFrame, x: str, y: str, hue: str | None = None, tit
 
 
 def box_figure(df: pd.DataFrame, column: str, by: str | None = None, title: str | None = None) -> Figure:
-    """Mediana, kwartyle i wartości odstające; opcjonalnie osobne pudełko dla każdej kategorii."""
     numeric_values(df, column)
     fig, ax = _new_figure()
     if by:
@@ -135,8 +118,6 @@ def box_figure(df: pd.DataFrame, column: str, by: str | None = None, title: str 
 
 def bar_figure(df: pd.DataFrame, column: str, value: str | None = None, agg: str = "mean",
                title: str | None = None) -> Figure:
-    """Bez `value`: liczba rekordów w każdej kategorii (braki jako „(brak)”).
-    Z `value`: średnia / mediana / suma zmiennej liczbowej w każdej kategorii."""
     series = categorical_values(df, column)
     fig, ax = _new_figure()
     if value is None:
@@ -158,10 +139,7 @@ def bar_figure(df: pd.DataFrame, column: str, value: str | None = None, agg: str
     return fig
 
 
-# ---------------------------------------------------------------- korelacja
-
 def correlation_matrix(df: pd.DataFrame, method: str = "pearson") -> pd.DataFrame:
-    """Korelacja między kolumnami liczbowymi (bez kolumn stałych i flag logicznych)."""
     if method not in ("pearson", "spearman"):
         raise ParameterError(f"Nieznana metoda korelacji: {method}.", "Dostępne: pearson, spearman.")
     columns = [c for c in df.columns
@@ -192,7 +170,6 @@ def strength(r: float) -> str:
 
 
 def top_correlations(df: pd.DataFrame, n: int = 5, method: str = "pearson") -> pd.DataFrame:
-    """Najsilniejsze pary (bez przekątnej i bez powtórzeń A-B / B-A)."""
     corr = correlation_matrix(df, method)
     pairs = []
     cols = list(corr.columns)
@@ -219,10 +196,7 @@ def correlation_conclusions(df: pd.DataFrame, n: int = 5) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------- przed / po
-
 def before_after_figure(before: pd.DataFrame, after: pd.DataFrame, column: str, kind: str = "histogram") -> Figure:
-    """Dwa wykresy obok siebie: dane surowe i dane po czyszczeniu (ta sama skala osi)."""
     if kind not in ("histogram", "pudelkowy"):
         raise ParameterError(f"Porównanie obsługuje histogram i pudełkowy, a nie {kind}.", "Wybierz jeden z nich.")
     values = {"PRZED": numeric_values(before, column), "PO": numeric_values(after, column)}
@@ -230,7 +204,6 @@ def before_after_figure(before: pd.DataFrame, after: pd.DataFrame, column: str, 
     axes = fig.subplots(1, 2, sharey=(kind == "pudelkowy"))
     for ax, (name, data) in zip(axes, values.items()):
         if kind == "histogram":
-            # skala logarytmiczna: kilkadziesiąt błędnych rekordów obok tysięcy poprawnych byłoby niewidoczne
             ax.hist(data, bins=50, color="#4C72B0" if name == "PRZED" else "#55A868", edgecolor="white",
                     linewidth=0.3, log=True)
             ax.set(xlabel=label(column), ylabel="Liczba rekordów (skala log.)")
@@ -243,8 +216,6 @@ def before_after_figure(before: pd.DataFrame, after: pd.DataFrame, column: str, 
     return fig
 
 
-# ---------------------------------------------------------------- jedna funkcja z parametrów
-
 CHART_KINDS = {
     "histogram": histogram_figure,
     "punktowy": scatter_figure,
@@ -255,13 +226,11 @@ CHART_KINDS = {
 
 
 def build_chart(df: pd.DataFrame, kind: str, **params) -> Figure:
-    """Buduje wykres z parametrów, np. build_chart(df, "punktowy", x="MedInc", y="MedHouseVal").
-    Z tej funkcji skorzysta GUI – wybór z listy zamienia się na nazwę i parametry."""
     if kind not in CHART_KINDS:
         raise ParameterError(f"Nieznany typ wykresu: {kind}.", f"Dostępne: {', '.join(CHART_KINDS)}.")
     try:
         return CHART_KINDS[kind](df, **params)
-    except TypeError as exc:  # np. brak wymaganego parametru x/y
+    except TypeError as exc:
         raise ParameterError(f"Niepoprawne parametry wykresu „{kind}”: {exc}", "Wybierz wszystkie wymagane kolumny.") from exc
 
 

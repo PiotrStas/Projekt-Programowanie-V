@@ -1,13 +1,3 @@
-"""Operacje czyszczenia jako czyste funkcje.
-
-Każda funkcja:
-- dostaje DataFrame i NIE zmienia go (pracuje na kopii),
-- zmienia wyłącznie wskazane kolumny,
-- zwraca (nowy DataFrame, liczba rekordów dotkniętych operacją).
-
-Zapis do dziennika zmian robi DataSession – tutaj jest tylko logika.
-"""
-
 from __future__ import annotations
 
 import pandas as pd
@@ -22,7 +12,6 @@ FLAG_SUFFIX = "_odstajaca"
 
 
 def drop_duplicates(df: pd.DataFrame, subset: list[str] | None = None) -> tuple[pd.DataFrame, int]:
-    """Usuwa pełne duplikaty (subset=None) albo duplikaty według wskazanego klucza. Zostaje pierwsze wystąpienie."""
     if subset:
         for column in subset:
             require_column(df, column)
@@ -31,7 +20,6 @@ def drop_duplicates(df: pd.DataFrame, subset: list[str] | None = None) -> tuple[
 
 
 def drop_missing(df: pd.DataFrame, columns: list[str] | None = None) -> tuple[pd.DataFrame, int]:
-    """Usuwa wiersze z brakiem we wskazanych kolumnach (None = w dowolnej kolumnie)."""
     for column in columns or []:
         require_column(df, column)
     result = df.dropna(subset=columns or None).copy()
@@ -41,7 +29,6 @@ def drop_missing(df: pd.DataFrame, columns: list[str] | None = None) -> tuple[pd
 def fill_missing(
     df: pd.DataFrame, column: str, strategy: str = "median", value: object = None
 ) -> tuple[pd.DataFrame, int]:
-    """Uzupełnia braki w JEDNEJ kolumnie: mediana / średnia (liczby), dominanta, stała."""
     require_column(df, column)
     if strategy not in FILL_STRATEGIES:
         raise ParameterError(f"Nieznana strategia: {strategy}.", f"Dostępne: {', '.join(FILL_STRATEGIES)}.")
@@ -78,7 +65,6 @@ def fill_missing(
 
 
 def apply_range_rule(df: pd.DataFrame, rule: RangeRule, action: str = "set_missing") -> tuple[pd.DataFrame, int]:
-    """Obsługa wartości poza zakresem: zamiana na brak, przycięcie do granic albo usunięcie wierszy."""
     if action not in RANGE_ACTIONS:
         raise ParameterError(f"Nieznana akcja: {action}.", f"Dostępne: {', '.join(RANGE_ACTIONS)}.")
     mask = rule.violations(df)
@@ -99,7 +85,6 @@ def apply_range_rule(df: pd.DataFrame, rule: RangeRule, action: str = "set_missi
 def handle_outliers(
     df: pd.DataFrame, column: str, action: str = "flag", factor: float = 1.5
 ) -> tuple[pd.DataFrame, int]:
-    """Wartości odstające wg IQR: oznaczenie (nowa kolumna logiczna), przycięcie albo usunięcie."""
     if action not in OUTLIER_ACTIONS:
         raise ParameterError(f"Nieznana akcja: {action}.", f"Dostępne: {', '.join(OUTLIER_ACTIONS)}.")
     mask = iqr_mask(df, column, factor)

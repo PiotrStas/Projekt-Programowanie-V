@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from .charts import MAX_CATEGORIES
 from .errors import ParameterError
 from .profile import numeric_columns, summary
 from .rules import RangeRule
@@ -116,3 +117,72 @@ def summary_lines(session: DataSession) -> list[str]:
         f"Braki: {cur['braki']} komórek ({cur['braki_pct']}%), wierszy z brakami: {cur['wiersze_z_brakami']}"
         f"     Pełne duplikaty: {cur['pelne_duplikaty']}",
     ]
+
+
+CHART_TYPES = {
+    "Histogram": "histogram",
+    "Wykres punktowy": "punktowy",
+    "Wykres pudełkowy": "pudelkowy",
+    "Wykres słupkowy": "slupkowy",
+    "Macierz korelacji": "korelacja",
+}
+NONE = "(brak)"
+
+
+@dataclass(frozen=True)
+class ChartField:
+    label: str
+    kind: str
+    required: bool
+
+
+CHART_FIELDS: dict[str, tuple[ChartField, ...]] = {
+    "histogram": (ChartField("Kolumna", "numeric", True),),
+    "punktowy": (ChartField("Oś X", "numeric", True), ChartField("Oś Y", "numeric", True),
+                 ChartField("Kolor wg", "category", False)),
+    "pudelkowy": (ChartField("Kolumna", "numeric", True), ChartField("Grupuj wg", "category", False)),
+    "slupkowy": (ChartField("Kategoria", "category", True), ChartField("Wartość (mediana)", "numeric", False)),
+    "korelacja": (),
+}
+CHART_PARAM_NAMES = {
+    "histogram": ("column",),
+    "punktowy": ("x", "y", "hue"),
+    "pudelkowy": ("column", "by"),
+    "slupkowy": ("column", "value"),
+    "korelacja": (),
+}
+
+
+def chart_numeric_columns(df: pd.DataFrame | None) -> list[str]:
+    if df is None:
+        return []
+    return [str(c) for c in numeric_columns(df) if df[c].nunique(dropna=True) > 1]
+
+
+def chart_category_columns(df: pd.DataFrame | None) -> list[str]:
+    if df is None:
+        return []
+    numeric = set(numeric_columns(df))
+    return [str(c) for c in df.columns
+            if c not in numeric and not pd.api.types.is_bool_dtype(df[c])
+            and 0 < df[c].nunique(dropna=True) <= MAX_CATEGORIES]
+
+
+def chart_choices(df: pd.DataFrame | None, kind: str) -> list[list[str]]:
+    lists = {"numeric": chart_numeric_columns(df), "category": chart_category_columns(df)}
+    return [lists[f.kind] if f.required else [NONE] + lists[f.kind] for f in CHART_FIELDS[kind]]
+
+
+def chart_params(kind: str, selected: list[str]) -> dict[str, str]:
+    if kind not in CHART_FIELDS:
+        raise ParameterError(f"Nieznany typ wykresu: {kind}.", "Wybierz typ wykresu z listy.")
+    params = {}
+    for field, name, value in zip(CHART_FIELDS[kind], CHART_PARAM_NAMES[kind], selected):
+        if value in ("", NONE):
+            if field.required:
+                raise ParameterError(f"Nie wybrano: {field.label}.", "Wybierz kolumnę z listy.")
+            continue
+        params[name] = value
+    if kind == "slupkowy" and "value" in params:
+        params["agg"] = "median"
+    return params

@@ -4,10 +4,13 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-from . import profile
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from . import charts, profile
 from .errors import StudioError
-from .gui_logic import (ALL_COLUMNS, ANY_COLUMN, OPERATION_BY_LABEL, OPERATIONS, parse_number,
-                        preview_rows, run_operation, summary_lines, valid_columns)
+from .gui_logic import (ALL_COLUMNS, ANY_COLUMN, CHART_FIELDS, CHART_TYPES, OPERATION_BY_LABEL, OPERATIONS,
+                        chart_choices, chart_params, parse_number, preview_rows, run_operation, summary_lines,
+                        valid_columns)
 from .rules import RangeRule
 from .session import DataSession
 
@@ -55,13 +58,18 @@ class StudioApp:
         self.option_var, self.column_var = tk.StringVar(), tk.StringVar()
         self.param_vars = {name: tk.StringVar() for name in ("min", "max", "value", "factor")}
         self.param_vars["factor"].set("1.5")
+        self.chart_type_var = tk.StringVar(value="Histogram")
+        self.chart_data_var = tk.StringVar(value="po czyszczeniu")
+        self.chart_col_vars = [tk.StringVar() for _ in range(3)]
+        self.canvas: FigureCanvasTkAgg | None = None
+        self.figure = None
 
         self._build()
         self.refresh_all()
 
     def _build(self) -> None:
         self.root.title("Studio jakości danych")
-        self.root.geometry("1000x650")
+        self.root.geometry("1050x720")
         self.root.minsize(800, 500)
 
         top = ttk.Frame(self.root, padding=(10, 8))
@@ -69,7 +77,14 @@ class StudioApp:
         ttk.Button(top, text="Wczytaj CSV…", command=self.choose_file).pack(side="left")
         self.reset_btn = ttk.Button(top, text="Reset do danych surowych", command=self.reset)
         self.reset_btn.pack(side="left", padx=8)
+        self.export_csv_btn = ttk.Button(top, text="Zapisz CSV…", command=self.export_csv)
+        self.export_csv_btn.pack(side="left")
+        self.export_log_btn = ttk.Button(top, text="Zapisz raport zmian…", command=self.export_log)
+        self.export_log_btn.pack(side="left", padx=8)
         ttk.Label(top, textvariable=self.file_var, foreground=COLOR_INFO).pack(side="left", padx=8)
+
+        self.status_label = ttk.Label(self.root, textvariable=self.status_var, padding=(10, 6), foreground=COLOR_INFO)
+        self.status_label.pack(side="bottom", fill="x")
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=10)
@@ -77,9 +92,8 @@ class StudioApp:
         self._build_profile_tab()
         self._build_quality_tab()
         self._build_cleaning_tab()
+        self._build_chart_tab()
 
-        self.status_label = ttk.Label(self.root, textvariable=self.status_var, padding=(10, 6), foreground=COLOR_INFO)
-        self.status_label.pack(fill="x")
 
     def _build_preview_tab(self) -> None:
         tab = ttk.Frame(self.notebook, padding=8)
@@ -156,6 +170,42 @@ class StudioApp:
         ttk.Label(tab, text="Dziennik zmian (ślad wszystkich operacji):").pack(anchor="w", pady=(6, 2))
         self.log_tree = scrolled_tree(tab, height=8)
         self.on_operation_change()
+
+    def _build_chart_tab(self) -> None:
+        tab = ttk.Frame(self.notebook, padding=8)
+        self.notebook.add(tab, text="Wykresy")
+        form = ttk.Frame(tab)
+        form.pack(fill="x")
+        ttk.Label(form, text="Typ wykresu:").grid(row=0, column=0, sticky="w", pady=3)
+        type_combo = ttk.Combobox(form, textvariable=self.chart_type_var, state="readonly", width=22,
+                                  values=list(CHART_TYPES))
+        type_combo.grid(row=0, column=1, sticky="w", padx=4)
+        type_combo.bind("<<ComboboxSelected>>", lambda _e: self.refresh_chart_columns())
+        ttk.Label(form, text="Dane:").grid(row=0, column=2, sticky="w", padx=(16, 0))
+        ttk.Combobox(form, textvariable=self.chart_data_var, state="readonly", width=16,
+                     values=["po czyszczeniu", "surowe"]).grid(row=0, column=3, sticky="w", padx=4)
+
+        self.chart_labels, self.chart_combos = [], []
+        for i, var in enumerate(self.chart_col_vars):
+            lbl = ttk.Label(form)
+            combo = ttk.Combobox(form, textvariable=var, state="readonly", width=22)
+            lbl.grid(row=1 + i, column=0, sticky="w", pady=3)
+            combo.grid(row=1 + i, column=1, sticky="w", padx=4)
+            self.chart_labels.append(lbl)
+            self.chart_combos.append(combo)
+
+        buttons = ttk.Frame(form)
+        buttons.grid(row=4, column=1, columnspan=3, sticky="w", pady=6)
+        self.draw_btn = ttk.Button(buttons, text="Rysuj", command=self.draw_chart)
+        self.draw_btn.pack(side="left", padx=4)
+        self.save_chart_btn = ttk.Button(buttons, text="Zapisz wykres…", command=self.save_chart)
+        self.save_chart_btn.pack(side="left", padx=4)
+
+        self.chart_frame = ttk.Frame(tab)
+        self.chart_frame.pack(fill="both", expand=True, pady=(6, 0))
+        self.chart_info = ttk.Label(self.chart_frame, text="Wybierz typ wykresu i kolumny, potem kliknij „Rysuj”.",
+                                    foreground=COLOR_INFO)
+        self.chart_info.pack(anchor="w")
 
     def choose_file(self) -> None:
         path = filedialog.askopenfilename(title="Wybierz plik CSV",
@@ -234,17 +284,99 @@ class StudioApp:
                         f"wiersze {op.wiersze_przed} → {op.wiersze_po}.", COLOR_OK)
         self.refresh_all()
 
+    def chart_kind(self) -> str:
+        return CHART_TYPES[self.chart_type_var.get()]
+
+    def draw_chart(self) -> None:
+        if self.session is None:
+            return
+        df = self.session.raw if self.chart_data_var.get() == "surowe" else self.session.current
+        try:
+            params = chart_params(self.chart_kind(), [v.get() for v in self.chart_col_vars])
+            figure = charts.build_chart(df, self.chart_kind(), **params)
+        except StudioError as exc:
+            self.show_error("Nie można narysować wykresu", exc)
+            return
+        self.clear_chart()
+        self.figure = figure
+        self.canvas = FigureCanvasTkAgg(figure, master=self.chart_frame)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+        self.save_chart_btn.configure(state="normal")
+        self.set_status(f"Narysowano: {self.chart_type_var.get()} (dane {self.chart_data_var.get()}).", COLOR_OK)
+
+    def clear_chart(self, info: str = "") -> None:
+        if self.canvas is not None:
+            self.canvas.get_tk_widget().destroy()
+        self.canvas, self.figure = None, None
+        self.save_chart_btn.configure(state="disabled")
+        self.chart_info.configure(text=info)
+
+    def save_chart(self, path: Path | None = None) -> Path | None:
+        if self.figure is None:
+            return None
+        if path is None:
+            name = filedialog.asksaveasfilename(title="Zapisz wykres", defaultextension=".png",
+                                                filetypes=[("PNG", "*.png"), ("PDF", "*.pdf"), ("SVG", "*.svg")])
+            if not name:
+                return None
+            path = Path(name)
+        try:
+            saved = charts.save_figure(self.figure, path)
+        except StudioError as exc:
+            self.show_error("Nie udało się zapisać wykresu", exc)
+            return None
+        self.set_status(f"Zapisano wykres: {saved}", COLOR_OK)
+        return saved
+
+    def _ask_csv_path(self, title: str, default: str) -> Path | None:
+        name = filedialog.asksaveasfilename(title=title, defaultextension=".csv", initialfile=default,
+                                            filetypes=[("CSV", "*.csv")])
+        return Path(name) if name else None
+
+    def export_csv(self, path: Path | None = None) -> Path | None:
+        if self.session is None:
+            return None
+        path = path or self._ask_csv_path("Zapisz oczyszczone dane", "cleaned.csv")
+        if path is None:
+            return None
+        try:
+            saved = self.session.export_cleaned(path)
+        except StudioError as exc:
+            self.show_error("Nie udało się zapisać danych", exc)
+            return None
+        self.set_status(f"Zapisano dane ({len(self.session.current)} wierszy): {saved}", COLOR_OK)
+        return saved
+
+    def export_log(self, path: Path | None = None) -> Path | None:
+        if self.session is None:
+            return None
+        path = path or self._ask_csv_path("Zapisz raport zmian", "raport_zmian.csv")
+        if path is None:
+            return None
+        try:
+            saved = self.session.export_log(path)
+        except StudioError as exc:
+            self.show_error("Nie udało się zapisać raportu", exc)
+            return None
+        self.set_status(f"Zapisano raport zmian: {saved}", COLOR_OK)
+        return saved
+
     def current_operation(self) -> str:
         return OPERATION_BY_LABEL[self.op_var.get()]
 
     def refresh_all(self) -> None:
         has_data = self.session is not None
-        for widget in (self.reset_btn, self.q_btn, self.apply_btn):
+        for widget in (self.reset_btn, self.q_btn, self.apply_btn, self.export_csv_btn, self.export_log_btn,
+                       self.draw_btn):
             widget.configure(state="normal" if has_data else "disabled")
         self.refresh_preview()
         self.refresh_profile()
         self.refresh_columns()
         self.refresh_log()
+        self.refresh_chart_columns()
+        self.clear_chart("Dane się zmieniły – kliknij „Rysuj”, aby narysować wykres." if has_data
+                         else "Wczytaj dane, aby rysować wykresy.")
         if not has_data:
             fill_tree(self.quality_tree, [], [])
 
@@ -281,6 +413,26 @@ class StudioApp:
         if self.column_var.get() not in columns:
             default = columns[0] if columns and columns[0] in (ALL_COLUMNS, ANY_COLUMN) else ""
             self.column_var.set(default)
+
+    def refresh_chart_columns(self) -> None:
+        df = self.session.current if self.session else None
+        kind = self.chart_kind()
+        fields = CHART_FIELDS[kind]
+        choices = chart_choices(df, kind)
+        for i, (lbl, combo, var) in enumerate(zip(self.chart_labels, self.chart_combos, self.chart_col_vars)):
+            if i >= len(fields):
+                lbl.grid_remove()
+                combo.grid_remove()
+                var.set("")
+                continue
+            lbl.configure(text=f"{fields[i].label}:")
+            combo.configure(values=choices[i])
+            lbl.grid()
+            combo.grid()
+            if var.get() not in choices[i]:
+                options = choices[i]
+                var.set(options[min(i, len(options) - 1)] if fields[i].required and options else
+                        options[0] if options else "")
 
     def refresh_log(self) -> None:
         if self.session is None:

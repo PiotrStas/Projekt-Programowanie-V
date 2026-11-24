@@ -1,0 +1,11 @@
+﻿nazwa,parametry,czas,wiersze_przed,wiersze_po,zmienione_rekordy
+wczytanie,"plik=california_housing_z_problemami.csv, separator=','",2026-11-24T16:11:38,0,20670,0
+usuniecie_duplikatow,pełne duplikaty,2026-11-24T16:11:38,20670,20640,30
+regula_zakresu,"HouseAge ∈ [0, 100], akcja=set_missing",2026-11-24T16:11:38,20640,20640,40
+regula_zakresu,"AveRooms ∈ [0, 200], akcja=set_missing",2026-11-24T16:11:38,20640,20640,50
+uzupelnienie_brakow,"kolumna=MedInc, strategia=median",2026-11-24T16:11:38,20640,20640,80
+uzupelnienie_brakow,"kolumna=HouseAge, strategia=median",2026-11-24T16:11:38,20640,20640,40
+uzupelnienie_brakow,"kolumna=AveRooms, strategia=median",2026-11-24T16:11:38,20640,20640,50
+usuniecie_brakow,kolumny=['Region'],2026-11-24T16:11:38,20640,20600,40
+wartosci_odstajace,"kolumna=AveOccup, IQR k=1.5, akcja=flag",2026-11-24T16:11:38,20600,20600,710
+wartosci_odstajace,"kolumna=Population, IQR k=1.5, akcja=flag",2026-11-24T16:11:38,20600,20600,1195

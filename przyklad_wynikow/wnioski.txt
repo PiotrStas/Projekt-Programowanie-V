@@ -1,0 +1,11 @@
+Najsilniejsze korelacje (Pearson):
+- Latitude – Longitude: r = -0.93 (bardzo silna ujemna)
+- AveRooms – AveBedrms: r = +0.85 (bardzo silna dodatnia)
+- MedInc – MedHouseVal: r = +0.69 (silna dodatnia)
+- MedInc – AveRooms: r = +0.33 (słaba dodatnia)
+- HouseAge – Population: r = -0.30 (słaba ujemna)
+
+Uwaga interpretacyjna: korelacja mierzy tylko współwystępowanie liniowe, NIE przyczynowość.
+Np. dodatnia korelacja dochodu (MedInc) i wartości domu (MedHouseVal) nie dowodzi, że jedno
+powoduje drugie – obie mogą zależeć od lokalizacji. Silna ujemna korelacja Latitude–Longitude
+wynika z kształtu Kalifornii (wybrzeże biegnie ukośnie), a nie z zależności między zmiennymi.

@@ -1,0 +1,80 @@
+RAPORT JAKOŚCI DANYCH – california_housing_z_problemami.csv
+
+=== PRZED czyszczeniem ===
+Rozmiar: 20670 wierszy × 10 kolumn (9 liczbowych, 1 tekstowych)
+Braki: 120 komórek (0.06%), wierszy z brakami: 120
+Pełne duplikaty: 30
+
+                 typ  braki  braki_pct  unikalne       min        q1    mediana    srednia         q3         max   odch_std najczestsza
+kolumna                                                                                                                                 
+MedInc       float64     80       0.39     12895    0.4999    2.5639     3.5352     3.8703     4.7436     15.0001     1.8983         NaN
+HouseAge     float64      0       0.00        53   -5.0000   18.0000    29.0000    28.5663    37.0000     52.0000    12.6597         NaN
+AveRooms     float64      0       0.00     19348    0.8462    4.4429     5.2342     7.8348     6.0588   1000.0000    48.9204         NaN
+AveBedrms    float64      0       0.00     14233    0.3333    1.0061     1.0488     1.0967     1.0996     34.0667     0.4736         NaN
+Population   float64      0       0.00      3888    3.0000  787.0000  1166.0000  1425.4170  1725.0000  35682.0000  1132.0250         NaN
+AveOccup     float64      0       0.00     18841    0.6923    2.4300     2.8180     3.0702     3.2815   1243.3333    10.3785         NaN
+Latitude     float64      0       0.00       862   32.5400   33.9300    34.2600    35.6323    37.7100     41.9500     2.1361         NaN
+Longitude    float64      0       0.00       844 -124.3500 -121.8000  -118.5000  -119.5702  -118.0100   -114.3100     2.0037         NaN
+MedHouseVal  float64      0       0.00      3842    0.1500    1.1970     1.7975     2.0687     2.6470      5.0000     1.1539         NaN
+Region           str     40       0.19         3       NaN       NaN        NaN        NaN        NaN         NaN        NaN       north
+
+=== Reguły jakości PRZED ===
+regula     kolumna               parametry  naruszenia  procent
+zakres    HouseAge     HouseAge ∈ [0, 100]          40     0.19
+zakres    AveRooms     AveRooms ∈ [0, 200]          50     0.24
+   IQR      MedInc k=1.5, [-0.7055, 8.013]         677     3.28
+   IQR    HouseAge    k=1.5, [-10.5, 65.5]           0     0.00
+   IQR    AveRooms   k=1.5, [2.019, 8.483]         554     2.68
+   IQR   AveBedrms   k=1.5, [0.8659, 1.24]        1427     6.90
+   IQR  Population     k=1.5, [-620, 3132]        1197     5.79
+   IQR    AveOccup   k=1.5, [1.153, 4.559]         713     3.45
+   IQR    Latitude   k=1.5, [28.26, 43.38]           0     0.00
+   IQR   Longitude k=1.5, [-127.5, -112.3]           0     0.00
+   IQR MedHouseVal  k=1.5, [-0.978, 4.822]        1074     5.20
+
+=== Dziennik zmian ===
+               nazwa                                               parametry  wiersze_przed  wiersze_po  zmienione_rekordy
+           wczytanie plik=california_housing_z_problemami.csv, separator=','              0       20670                  0
+usuniecie_duplikatow                                         pełne duplikaty          20670       20640                 30
+      regula_zakresu                  HouseAge ∈ [0, 100], akcja=set_missing          20640       20640                 40
+      regula_zakresu                  AveRooms ∈ [0, 200], akcja=set_missing          20640       20640                 50
+ uzupelnienie_brakow                        kolumna=MedInc, strategia=median          20640       20640                 80
+ uzupelnienie_brakow                      kolumna=HouseAge, strategia=median          20640       20640                 40
+ uzupelnienie_brakow                      kolumna=AveRooms, strategia=median          20640       20640                 50
+    usuniecie_brakow                                      kolumny=['Region']          20640       20600                 40
+  wartosci_odstajace                 kolumna=AveOccup, IQR k=1.5, akcja=flag          20600       20600                710
+  wartosci_odstajace               kolumna=Population, IQR k=1.5, akcja=flag          20600       20600               1195
+
+=== PO czyszczeniu ===
+Rozmiar: 20600 wierszy × 12 kolumn (9 liczbowych, 3 tekstowych)
+Braki: 0 komórek (0.0%), wierszy z brakami: 0
+Pełne duplikaty: 0
+
+                          typ  braki  braki_pct  unikalne       min        q1    mediana    srednia         q3         max   odch_std najczestsza
+kolumna                                                                                                                                          
+MedInc                float64      0        0.0     12871    0.4999    2.5667     3.5347     3.8695     4.7390     15.0001     1.8960         NaN
+HouseAge              float64      0        0.0        52    1.0000   18.0000    29.0000    28.6326    37.0000     52.0000    12.5698         NaN
+AveRooms              float64      0        0.0     19310    0.8462    4.4430     5.2292     5.4283     6.0485    141.9091     2.4741         NaN
+AveBedrms             float64      0        0.0     14210    0.3333    1.0061     1.0488     1.0967     1.0996     34.0667     0.4743         NaN
+Population            float64      0        0.0      3887    3.0000  787.0000  1166.0000  1425.8066  1725.0000  35682.0000  1133.1202         NaN
+AveOccup              float64      0        0.0     18804    0.6923    2.4295     2.8185     3.0710     3.2822   1243.3333    10.3961         NaN
+Latitude              float64      0        0.0       862   32.5400   33.9300    34.2600    35.6315    37.7100     41.9500     2.1361         NaN
+Longitude             float64      0        0.0       844 -124.3500 -121.8000  -118.4900  -119.5692  -118.0100   -114.3100     2.0037         NaN
+MedHouseVal           float64      0        0.0      3841    0.1500    1.1960     1.7970     2.0683     2.6470      5.0000     1.1535         NaN
+Region                    str      0        0.0         3       NaN       NaN        NaN        NaN        NaN         NaN        NaN       north
+AveOccup_odstajaca       bool      0        0.0         2       NaN       NaN        NaN        NaN        NaN         NaN        NaN       False
+Population_odstajaca     bool      0        0.0         2       NaN       NaN        NaN        NaN        NaN         NaN        NaN       False
+
+=== Reguły jakości PO ===
+regula     kolumna               parametry  naruszenia  procent
+zakres    HouseAge     HouseAge ∈ [0, 100]           0     0.00
+zakres    AveRooms     AveRooms ∈ [0, 200]           0     0.00
+   IQR      MedInc k=1.5, [-0.6918, 7.998]         688     3.34
+   IQR    HouseAge    k=1.5, [-10.5, 65.5]           0     0.00
+   IQR    AveRooms   k=1.5, [2.035, 8.457]         520     2.52
+   IQR   AveBedrms   k=1.5, [0.8658, 1.24]        1420     6.89
+   IQR  Population     k=1.5, [-620, 3132]        1195     5.80
+   IQR    AveOccup    k=1.5, [1.15, 4.561]         710     3.45
+   IQR    Latitude   k=1.5, [28.26, 43.38]           0     0.00
+   IQR   Longitude k=1.5, [-127.5, -112.3]           0     0.00
+   IQR MedHouseVal k=1.5, [-0.9805, 4.823]        1067     5.18

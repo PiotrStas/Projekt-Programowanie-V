@@ -164,3 +164,81 @@ def test_raport_jakosci_w_oknie(app, dane):
     app.check_quality()
     rows = [app.quality_tree.item(i, "values") for i in app.quality_tree.get_children()]
     assert rows[0][0] == "zakres" and rows[0][3] == "1"
+
+
+def test_kolumny_do_wykresow(dane):
+    from studio.loader import load_csv
+
+    df, _ = load_csv(dane / "test_06_stala_tekst.csv")
+    assert logic.chart_numeric_columns(df) == ["id"]                         # stała kolumna pominięta
+    assert logic.chart_category_columns(df) == ["label"]
+    assert logic.chart_choices(df, "punktowy") == [["id"], ["id"], [logic.NONE, "label"]]
+    assert logic.chart_choices(df, "korelacja") == []
+
+
+def test_parametry_wykresu():
+    assert logic.chart_params("punktowy", ["a", "b", logic.NONE]) == {"x": "a", "y": "b"}
+    assert logic.chart_params("slupkowy", ["Region", "cena"]) == {"column": "Region", "value": "cena", "agg": "median"}
+    assert logic.chart_params("korelacja", []) == {}
+    with pytest.raises(ParameterError, match="Oś Y"):
+        logic.chart_params("punktowy", ["a", ""])
+
+
+def test_wykres_w_oknie_i_podmiana(app, dane):
+    app.load_file(dane / "test_04_zakres_outlier.csv")
+    app.chart_type_var.set("Histogram")
+    app.refresh_chart_columns()
+    app.chart_col_vars[0].set("AveRooms")
+    app.draw_chart()
+    first = app.canvas
+    assert first is not None and str(app.save_chart_btn.cget("state")) == "normal"
+
+    app.chart_type_var.set("Wykres pudełkowy")
+    app.refresh_chart_columns()
+    app.chart_col_vars[0].set("HouseAge")
+    app.draw_chart()
+    assert app.canvas is not first
+    canvases = [w for w in app.chart_frame.winfo_children() if w.winfo_class() == "Canvas"]
+    assert len(canvases) == 1                                                # stary wykres usunięty
+
+
+def test_stala_kolumna_blokuje_wykres(app, dane):
+    app.load_file(dane / "test_06_stala_tekst.csv")
+    app.chart_type_var.set("Histogram")
+    app.refresh_chart_columns()
+    assert "constant" not in app.chart_combos[0].cget("values")
+    app.chart_col_vars[0].set("constant")
+    app.draw_chart()
+    assert "stała" in app.errors[0]
+    assert app.canvas is None
+
+
+def test_zmiana_danych_czysci_wykres(app, dane):
+    app.load_file(dane / "test_04_zakres_outlier.csv")
+    app.draw_chart()
+    assert app.canvas is not None
+    app.reset()
+    assert app.canvas is None and "Dane się zmieniły" in app.chart_info.cget("text")
+
+
+def test_eksport_z_okna(app, dane, tmp_path):
+    from studio.loader import load_csv
+
+    app.load_file(dane / "test_03_braki_duplikaty.csv")
+    app.apply_operation()                                                    # domyślnie: usuń duplikaty
+    reloaded, _ = load_csv(app.export_csv(tmp_path / "cleaned.csv"))
+    assert reloaded.shape == (4, 3)
+    log, _ = load_csv(app.export_log(tmp_path / "raport_zmian.csv"))
+    assert log["nazwa"].tolist() == ["wczytanie", "usuniecie_duplikatow"]
+
+    app.chart_type_var.set("Wykres słupkowy")
+    app.refresh_chart_columns()
+    app.draw_chart()
+    for ext, start in ((".png", b"\x89PNG"), (".pdf", b"%PDF"), (".svg", b"<?xml")):
+        assert app.save_chart(tmp_path / f"wykres{ext}").read_bytes().startswith(start)
+
+
+def test_blad_zapisu_w_oknie(app, dane, tmp_path):
+    app.load_file(dane / "test_01_przecinek.csv")
+    assert app.export_csv(tmp_path) is None                                  # katalog zamiast pliku
+    assert "Nie udało się zapisać" in app.errors[0]

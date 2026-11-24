@@ -40,3 +40,12 @@
   wszystkie kontrolki po każdej zmianie zbioru.
 - Błędny plik lub parametr -> okienko z przyczyną i podpowiedzią; poprzednie dane zostają.
 - Logika okna bez Tkintera w `studio/gui_logic.py`; 25 nowych testów (logika + prawdziwe okno), razem 98.
+
+## Lab 9 – wykres w oknie, eksport i oddanie
+- Zakładka „Wykresy”: typ wykresu, dane (po czyszczeniu / surowe), kolumny dobrane do typu wykresu;
+  wykres osadzony w oknie przez `FigureCanvasTkAgg`, poprzedni wykres usuwany przed narysowaniem nowego.
+- Zapis wykresu do PNG/PDF/SVG oraz eksport `cleaned.csv` i raportu zmian z poziomu okna.
+- Zmiana danych (wczytanie, operacja, reset) czyści nieaktualny wykres.
+- Pasek statusu zawsze widoczny na dole okna.
+- Przykładowe wyniki w `przyklad_wynikow/`, README z opisem reguł i raportem testów.
+- 7 nowych testów okna i logiki wykresów (razem 105).
